@@ -27,7 +27,7 @@
 # install.packages("RColorBrewer"); install.packages("ggplot2"); install.packages("devtools")
 # require(devtools); install_github("rstudio/shiny");
 # install.packages("shinydashboard"); install.packages("shinyjs"); install.packages("magrittr"); 
-# install.packages("lubridate"); 
+# install.packages("lubridate"); install.packages("tibble")
 
 require(RColorBrewer)
 require(ggplot2)
@@ -36,12 +36,13 @@ require(shinyjs)
 require(magrittr)
 require(lubridate)
 require(devtools)
+require(tibble)
 
 require(shiny)
 
 # filepaths <- "D:/R/Ascendance/"
 # filepaths <- "C:/Users/Johann/Documents/Ascendance/"
-filepaths <- "/media/alan/C4A001DBA001D4B8/Users/Johann/Documents/Ascendance/"
+filepaths <- "/home/alan/Documents/Ascendance/"
 
 source(paste0(filepaths, "App/Setup/setup_focusAreas.R"))
 source(paste0(filepaths, "App/Setup/setup_categories.R"))
