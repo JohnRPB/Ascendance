@@ -1,6 +1,6 @@
 ################################################################################################################################
 #############------------------------------------------------------------------------------------------------------#############
-#############---------------------------------- Ascendance Tutorial Main Module -----------------------------------#############
+#############------------------------------------ Setup Module 2: Categories --------------------------------------#############
 #############------------------------------------------------------------------------------------------------------#############
 ################################################################################################################################
 
@@ -25,9 +25,11 @@ pieboxUI <- function(id, ID) {
                   column(1, offset = 1, actionButton(ns(paste0("gominus_", x)), label = h4("-  "), width = "35px"))
            )
     )
+    
   }
   
-  IDs <- unlist(A$cdat$cat[A$cdat$fa == ID])[unlist(A$cdat$cat[A$cdat$fa == ID]) != "Uncategorized"]
+  IDs <- unlist(A$i3$ID[A$i3$i2 == ID])
+  IDs <- IDs[unlist(A$i3$Name[A$i3$i2 == ID]) != "Uncategorized"]
   
   if (length(IDs) > 1) {
     
@@ -45,17 +47,17 @@ piebox <- function(input, output, session, ID) {
   
   rv$A <- A
   
-  IDs <- unlist(A$cdat$cat[A$cdat$fa == ID])[unlist(A$cdat$cat[A$cdat$fa == ID]) != "Uncategorized"]
+  IDs <- unlist(A$i3$ID[A$i3$i2 == ID])[unlist(A$i3$Name[A$i3$i2 == ID]) != "Uncategorized"]
   
   lapply(IDs, function (x) {
     
     observeEvent(input[[paste0("goplus_", x)]], {
       
-      rv$A$cdat$weight[rv$A$cdat$cat == x][[1]] <- rv$A$cdat$weight[rv$A$cdat$cat == x][[1]] + .01
+      rv$A$i3$Weight[rv$A$i3$ID == x][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == x][[1]] + .01
       
       for (i in IDs[!(IDs %in% x)]) {
         
-        rv$A$cdat$weight[rv$A$cdat$cat == i][[1]] <- rv$A$cdat$weight[rv$A$cdat$cat == i][[1]] - (.01)/(length(IDs)-1)
+        rv$A$i3$Weight[rv$A$i3$ID == i][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == i][[1]] - (.01)/(length(IDs)-1)
         
       }
       
@@ -67,11 +69,11 @@ piebox <- function(input, output, session, ID) {
     
     observeEvent(input[[paste0("gominus_", x)]], {
       
-      rv$A$cdat$weight[rv$A$cdat$cat == x][[1]] <- rv$A$cdat$weight[rv$A$cdat$cat == x][[1]] - .01
+      rv$A$i3$Weight[rv$A$i3$ID == x][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == x][[1]] - .01
       
       for (i in IDs[!(IDs %in% x)]) {
         
-        rv$A$cdat$weight[rv$A$cdat$cat == i][[1]] <- rv$A$cdat$weight[rv$A$cdat$cat == i][[1]] + (.01)/(length(IDs)-1)
+        rv$A$i3$Weight[rv$A$i3$ID == i][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == i][[1]] + (.01)/(length(IDs)-1)
         
       }
       
@@ -81,7 +83,8 @@ piebox <- function(input, output, session, ID) {
   
   observeEvent({
     
-    IDs <- unlist(rv$A$cdat$cat[rv$A$cdat$fa == ID])[unlist(rv$A$cdat$cat[rv$A$cdat$fa == ID]) != "Uncategorized"]
+    IDs <- unlist(rv$A$i3$ID[rv$A$i3$i2 == ID])
+    IDs <- IDs[unlist(rv$A$i3$Name[rv$A$i3$i2 == ID]) != "Uncategorized"]
     
     if (length(IDs) > 1) {
       
@@ -107,11 +110,11 @@ piebox <- function(input, output, session, ID) {
       
       output$pie <- renderPlot({
         
-        rv$cat_weights <- unlist(rv$A$cdat$weight[(rv$A$cdat$fa == ID) & (rv$A$cdat$cat != "Uncategorized")])
+        rv$i3_weights <- unlist(rv$A$i3$Weight[(rv$A$i3$i2 == ID) & (rv$A$i3$Name != "Uncategorized")])
         
-        dfT <- data.frame(subjects = IDs, value = rv$cat_weights)
+        dfT <- data.frame(subjects = IDs, value = rv$i3_weights)
         
-        ggplot(dfT, aes(x = "", y = value, fill = IDs)) + geom_bar(width = 2, stat = "identity") +
+        ggplot(dfT, aes(x = "", y = value, fill = as.character(IDs))) + geom_bar(width = 2, stat = "identity") +
           coord_polar("y", start=0) + scale_fill_manual(values = colfunc(length(IDs))) + 
           theme(axis.title.x = element_blank()) + theme(axis.title.y = element_blank())
         
@@ -129,7 +132,7 @@ setup_categoriesUI <- function(id, label = "categories") {
   
   ns <- NS(id)
   
-  focusGroups <- unlist(A$fdat$fa[A$fdat$fa != "Uncategorized"])
+  focusGroups <- unlist(A$i2$ID[A$i2$Name != "Uncategorized"])
   
   rows <- tagList()
   rows[[1]] <- fluidRow(
@@ -147,7 +150,7 @@ setup_categoriesUI <- function(id, label = "categories") {
 
 setup_categories <- function(input, output, session) {
   
-  focusGroups <- unlist(A$fdat$fa[A$fdat$fa != "Uncategorized"])
+  focusGroups <- unlist(A$i2$ID[A$i2$Name != "Uncategorized"])
   
   lapply(focusGroups, function(id) {
     
