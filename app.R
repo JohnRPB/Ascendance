@@ -52,7 +52,7 @@ source(paste0(filepaths, "App/AssessmentModule.R"))
 source(paste0(filepaths, "App/InputModule.R"))
 
 #  "A_Johann.R"
-path <- paste0(filepaths, "A_Johann2.R")
+path <- paste0(filepaths, "A_attempt12.R")
 
 options(shiny.reactlog=TRUE)
 
@@ -62,23 +62,6 @@ nameObject <- function(name, object, Envir = .GlobalEnv) {
   nm <- name
   v <- object
   assign(nm,v, envir = Envir)
-}
-
-tic <- function(gcFirst = TRUE, type=c("elapsed", "user.self", "sys.self")) {
-  type <- match.arg(type)
-  assign(".type", type, envir=baseenv())
-  if(gcFirst) gc(FALSE)
-  tic <- proc.time()[type]         
-  assign(".tic", tic, envir=baseenv())
-  invisible(tic)
-}
-
-toc <- function() {
-  type <- get(".type", envir=baseenv())
-  toc <- proc.time()[type]
-  tic <- get(".tic", envir=baseenv())
-  print(toc - tic)
-  invisible(toc)
 }
 
 #'
@@ -135,26 +118,6 @@ pieChart_render <- function(id, groups) {
   
 }
 
-
-priorityOutput <- function(inputlist) {
-  df <- data.frame(
-    FocusArea = rv$afg,
-    value = inputlist
-  )
-}
-
-category_observer <- function(id) {
-  
-  observeEvent(input$submitcat, {
-    categories <- unlist(strsplit(unlist(strsplit(input[[paste("focusAreas", id, sep = "_")]], ",")), " "))
-    categories <- categories[-which(categories == "")]
-    
-    A$afg[[paste("focusAreas", id, sep = "_")]] <- categories
-    
-    rv$afg[[paste("focusAreas", id, sep = "_")]] <- categories
-    
-  })
-}
 
 if (file.exists(path) == TRUE) {
   
@@ -214,7 +177,6 @@ if (file.exists(path) == TRUE) {
       InputUI("input")
       
     })
-    
     
   }
   
