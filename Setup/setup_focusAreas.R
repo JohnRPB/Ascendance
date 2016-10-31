@@ -1,13 +1,21 @@
-################################################################################################################################
-#############------------------------------------------------------------------------------------------------------#############
-#############---------------------------------- Tutorial Module 1: Focus Areas ------------------------------------#############
-#############------------------------------------------------------------------------------------------------------#############
-################################################################################################################################
+#############################################################################################################################################################
+#############-----------------------------------------------------------------------------------------------------------------------------------#############
+#############------------------------------------------------ Setup Module 1: Focus Areas ------------------------------------------------------#############
+#############-----------------------------------------------------------------------------------------------------------------------------------#############
+#############################################################################################################################################################
+
+## ------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+## --------------------------------------------------------------------------------------------------------------------------------------------- ##
+## ----------------------------------------------------------------------------------------------------------------------------------- ##
+## ------------------------------------------------------------------------------------------------------------------------- ##
+## --------------------------------------------------------------------------------------------------------------- ##
 
 #' This is the tutorial module for creating focus areas and prioritizing them
 #' 
 
 colfunc <- colorRampPalette(c("slategray1", "deepskyblue4"))
+
+## ----------------------------------------------------------------- Main input function ----------------------------------------------------------------- ##
 
 setup_focusAreasInput <- function(id, label = "focusAreas") {
   
@@ -44,6 +52,7 @@ setup_focusAreasInput <- function(id, label = "focusAreas") {
   
 }
 
+## ---------------------------------------------------------------- Main server function ----------------------------------------------------------------- ##
 
 setup_focusAreas <- function(input, output, session) {
   
@@ -51,27 +60,52 @@ setup_focusAreas <- function(input, output, session) {
   
   vals <- reactiveValues(x = NULL, y = NULL)
   
+  ## --------------------------------------------------- Reactive expression for '+/-' buttons --------------------------------------------------- ##
+  
   makeObsvs <- eventReactive(input$submitfocus, {
     
-    focusGroups <- rv$A$fdat$fa[rv$A$fdat$fa != "Uncategorized"]
+    #' Create vector of only weighted focus area IDs (i.e. exclude 'Uncategorized')
     
-    IDs <- unlist(focusGroups)
+    IDs <- rv$A$i2$ID[rv$A$i2$Name != "Uncategorized"] %>% unlist
+    
+    ## ------------------------------------------- Conditional for generating '+/-' observers -------------------------------------------- ##
+    
+    #' Conditional allows for control of multiple presses of 'submit' button (in case user re-types and re-submits).
+    #' 
+    #' This is accomplished via storage of variables x and y in 'vals' reactiveValues object (see above); when x is NULL, program knows 
+    #' 'submit' button was never pressed, while y stores the IDs of the focus areas that have already been generated.
+    
+    ## --------------------------------------------------- First condition ----------------------------------------------------- ##
+    
+    ##' If observers for buttons have been generated before
     
     if (is.null(vals$x)) {
       
+      ## -------------------------------------- Iterate to store multiple observers ------------------------------------ ##
+      
+      ##' res1 stores observer list for '+' buttons
+      ##' res2 for '-' buttons
+      
       res1 <- lapply(IDs, function (x) {
+        
+        ## -------------------------------------- Generate a '+' observer -------------------------------------- ##
+        
+        ##' Observer adds some to target focus area weight but controls sum of focus area weights to remain 
+        ##' equal to 1.
         
         observeEvent(input[[paste0("goplus_", x)]], {
           
-          rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] + .01
+          #' Add .01 to weight of focus Area with ID == x
+          
+          rv$A$i2$Weight[rv$A$i2$ID == x][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == x][[1]] + .01
+          
+          #' Subtract what was added to previous focus area to overall, but from all areas equally
           
           for (i in IDs[!(IDs %in% x)]) {
             
-            rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] - (.01)/(length(IDs)-1)
+            rv$A$i2$Weight[rv$A$i2$ID == i][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == i][[1]] - (.01)/(length(IDs)-1)
             
           }
-          
-          
           
         })
         
@@ -79,77 +113,130 @@ setup_focusAreas <- function(input, output, session) {
       
       res2 <- lapply(IDs, function (x) {
         
+        ## -------------------------------------- Generate a '-' observer -------------------------------------- ##
+        
+        ##' Observer subtracts some from target focus area weight but controls sum of focus area weights to remain equal 
+        ##' to 1.
+        
         observeEvent(input[[paste0("gominus_", x)]], {
           
-          rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] - .01
+          #' Subtract .01 to weight of focus Area with ID == x
+          
+          rv$A$i2$Weight[rv$A$i2$ID == x][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == x][[1]] - .01
           
           for (i in IDs[!(IDs %in% x)]) {
             
-            rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] + (.01)/(length(IDs)-1)
+            #' Add what was subtracted from previous focus area to overall, but from all areas equally
+            
+            rv$A$i2$Weight[rv$A$i2$ID == i][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == i][[1]] + (.01)/(length(IDs)-1)
             
           }
-          
-          
           
         })
         
       })
       
+      #' Combine and store observer lists
+      
       res <- append(res1, res2)
       
+      #' Notify program that observers have been created
+      
       vals$x <- 1
+      
+      #' Notify program of *which* focus areas observers were created for
+      
       vals$y <- IDs
+      
+      ## --------------------------------------------------- Second condition ---------------------------------------------------- ##
+      
+      ##' Ff 'new' list of IDs is the same as old list
       
     } else if (all(IDs %in% vals$y)) {
       
       return(NULL)
       
+      ## ---------------------------------------------------- Third condition ---------------------------------------------------- ##
+      
+      ##' If 'new' list of IDs has some of the same numbers as old list
+      
     } else {
+      
+      #' Create var of IDs for which observers have not already been generated
       
       new_ind <- !(IDs %in% vals$y)
       
+      ## -------------------------------------- Iterate to store remaining observers ----------------------------------- ##
+      
       res1 <- lapply(IDs[new_ind], function (x) {
         
+        ## -------------------------------------- Generate a '+' observer -------------------------------------- ##
+        
+        ##' Observer adds some to target focus area weight but controls sum of focus area weights to remain 
+        ##' equal to 1.
         
         observeEvent(input[[paste0("goplus_", x)]], {
           
-          rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] + .01 ## add .01 to focus group weight
+          #' Add .01 to weight of focus Area with ID == x
+          
+          rv$A$i2$Weight[rv$A$i2$ID == x][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == x][[1]] + .01 ## add .01 to focus group weight
+          
+          #' Subtract what was added to previous focus area to overall, but from all areas equally
           
           for (i in IDs[!(IDs %in% x)]) {
             
-            rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] - (.01)/(length(IDs)-1)
+            rv$A$i2$Weight[rv$A$i2$ID == i][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == i][[1]] - (.01)/(length(IDs)-1)
             
           }
-          
-          
-        })
-      })
-      res2 <- lapply(IDs, function (x) {
-        
-        observeEvent(input[[paste0("gominus_", x)]], {
-          
-          rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == x][[1]] - .01
-          
-          for (i in IDs[!(IDs %in% x)]) {
-            
-            rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] <- rv$A$fdat$weight[rv$A$fdat$fa == i][[1]] + (.01)/(length(IDs)-1)
-            
-          }
-          
           
         })
         
       })
       
+      res2 <- lapply(IDs, function (x) {
+        
+        ## -------------------------------------- Generate a '-' observer -------------------------------------- ##
+        
+        ##' Observer subtracts some from target focus area weight but controls sum of focus area weights to remain 
+        ##' equal to 1.
+        
+        observeEvent(input[[paste0("gominus_", x)]], {
+          
+          #' Subtract .01 to weight of focus Area with ID == x
+          
+          rv$A$i2$Weight[rv$A$i2$ID == x][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == x][[1]] - .01
+          
+          #' Add what was subtracted from previous focus area to overall, but from all areas equally
+          
+          for (i in IDs[!(IDs %in% x)]) {
+            
+            rv$A$i2$Weight[rv$A$i2$ID == i][[1]] <- rv$A$i2$Weight[rv$A$i2$ID == i][[1]] + (.01)/(length(IDs)-1)
+            
+          }
+          
+        })
+        
+      })
+      
+      ## ------------------------------------- Combine observers and update objects  ----------------------------------- ##
+      
+      #' Combine and store observer lists
+      
       res <- append(res1, res2)
+      
+      #' Notify program of *which* focus areas observers were created for
       
       vals$y <- IDs
       
     }
     
+    ## ------------------------------------------------------ Express observers ---------------------------------------------------------- ##
+    
     res
     
   })
+  
+  ## ------------------------------------------------------------------------------------------------------------------------------- ##
   
   observeEvent(eventExpr = input$submitfocus, handlerExpr = {
     
@@ -178,22 +265,53 @@ setup_focusAreas <- function(input, output, session) {
     focusAreas <- unlist(strsplit(unlist(strsplit(input$selectfocus, ",")), " "))
     focusAreas <- append(focusAreas[-which(focusAreas == "")], "Uncategorized")
     
+    #######
+    #' transitioning to n-level hierachy
+    
+    A$i0 <- tibble(
+      ID = list(1, 2), 
+      Name = list("Time", "GPA"), 
+      Notes = list("Keep track of temporal things", "Keep track of grades and GPA"),
+      End = list(NA, NA),
+      Start = list(Sys.time(), Sys.time()),
+      Weight = list(.5, .5)
+    )
+    
+    A$i1 <- tibble(
+      ID = list(1, 2), 
+      Name = list("Productive", "Leisure"), 
+      Notes = list("Self-explanatory", "Self-explanatory"),
+      End = list(NA, NA),
+      Start = list(Sys.time(), Sys.time()),
+      Weight = list(.5, .5),
+      i0 = list(1,1)
+    )
+    
+    ######
+    
     focusAreas %>% length %>% rep("", .) %>% as.list %>% {
       
-      A$fdat <- data.frame(fa = I( . ), cat = I( . ), tasks = I( . ), weight = I( . ), dateStart = I( . ), 
-                           dateEnd = I( . ), class = I( . ))
+      A$i2 <- tibble(
+        ID = . , Name = . , Notes = . , End = . , Start = . , Weight =. , i0 = . , i1 = .
+      )
       
     }
     
-    A$fdat$fa <- as.list(focusAreas)
+    A$i2$i0 <- focusAreas %>% length %>% rep(1, . ) %>% as.list
     
-    A$fdat$weight[A$fdat$fa != "Uncategorized"] <- as.list(rep(1/(length(focusAreas) - 1), length(focusAreas) - 1))
+    A$i2$i1 <- focusAreas %>% length %>% rep(1, . ) %>% as.list
     
-    A$fdat[A$fdat$fa == "Uncategorized",]$weight <- NA
+    A$i2$ID <- focusAreas %>% length %>% seq_len %>% as.list
+    
+    A$i2$Name <- focusAreas %>% as.list
+    
+    A$i2$Weight[A$i2$Name != "Uncategorized"] <- as.list(rep(1/(length(focusAreas) - 1), length(focusAreas) - 1))
+    
+    A$i2[A$i2$Name == "Uncategorized",]$Weight <- NA
     
     rv$A <- A
     
-    IDs <- A$fdat$fa[A$fdat$fa != "Uncategorized"]
+    IDs <- A$i2$ID[A$i2$Name != "Uncategorized"]
     
     output$ui <- renderUI({
       
@@ -227,7 +345,7 @@ setup_focusAreas <- function(input, output, session) {
   
   observeEvent({
     
-    IDs <- unlist(rv$A$fdat$fa)[unlist(rv$A$fdat$fa) != "Uncategorized"]
+    IDs <- unlist(rv$A$i2$Name)[unlist(rv$A$i2$Name) != "Uncategorized"]
     
     a <- lapply( IDs , function (x) {
       
@@ -247,17 +365,17 @@ setup_focusAreas <- function(input, output, session) {
     
     output$pie <- renderPlot({
       
-      focusGroup <- rv$A$fdat[rv$A$fdat$fa != "Uncategorized",]
+      focusGroup <- rv$A$i2[rv$A$i2$Name != "Uncategorized",]
       
-      groups <- unlist(focusGroup$fa)
+      groups <- unlist(focusGroup$Name)
       
-      rv$weights <- unlist(focusGroup$weight)
+      rv$Weights <- unlist(focusGroup$Weight)
       
-      dfT <- data.frame(subjects = groups, value = rv$weights)
+      dfT <- data.frame(subjects = groups, value = rv$Weights)
       
       ggplot(dfT, aes(x = "", y = value, fill = groups)) + 
         geom_bar(width = 2, stat = "identity") + coord_polar("y", start=0) + 
-        scale_fill_manual(values = colfunc(length(focusGroup$fa))) + 
+        scale_fill_manual(values = colfunc(length(focusGroup$Name))) + 
         theme(axis.title.x = element_blank()) + 
         theme(axis.title.y = element_blank())
       
@@ -267,9 +385,10 @@ setup_focusAreas <- function(input, output, session) {
   
   observeEvent(input$submitcat, {
     
-    focusGroups <- A$fdat$fa[A$fdat$fa != "Uncategorized"]
+    focusGroups <- A$i2$ID[A$i2$Name != "Uncategorized"]
     
-    categoriesdat <- data.frame(cat = c(), fa = c(), tasks = c(), weight = c())
+    categoriesdat <- tibble(ID = list(), Name = list(), Notes = list(), End = list(), Start = list(), Weight = list(), 
+                            i0 = list(), i1 = list(), i2 = list())
     
     for (x in unlist(focusGroups)) {
       
@@ -289,42 +408,46 @@ setup_focusAreas <- function(input, output, session) {
         
       }
       
-      A$fdat$cat[A$fdat$fa == x][[1]] <- categories
-      
       dat <- categories %>% length %>% rep("", .) %>% as.list %>% {
         
-        data.frame(cat = I( as.list(categories) ), 
-                   fa = I( as.list(rep(x, length(categories))) ), 
-                   tasks = I( . ), 
-                   weight = I( as.list(rep(1/(length(categories)-1), length(categories)))))
+        tibble(ID = as.list(seq_len(length(categories))),
+               Name =  as.list(categories) , 
+               Notes =  . , 
+               End = . ,
+               Start = . ,
+               Weight = as.list(rep(1/(length(categories)-1), length(categories))),
+               i0 = as.list(rep(1, length(categories))) ,
+               i1 = as.list(rep(1, length(categories))) ,
+               i2 = as.list(rep(x, length(categories)))
+        )
         
       }
       
       categoriesdat <- rbind(categoriesdat, dat)
       
-      A$cdat <- categoriesdat
+      A$i3 <- categoriesdat
       
-      A$fdat$dateStart[A$fdat$fa == x][[1]] <- (input[[paste0("focusdateAreas", x)]])[1]
+      A$i2$Start[A$i2$ID == x][[1]] <- (input[[paste0("focusdateAreas", x)]])[1]
       
       if (input[[paste0("noend", x)]] == TRUE) {
         
-        A$fdat$dateEnd[A$fdat$fa == x][[1]] <- NA
+        A$i2$Start[A$i2$ID == x][[1]] <- NA
         
       } else {
         
-        A$fdat$dateEnd[A$fdat$fa == x][[1]] <- (input[[paste0("focusdateAreas", x)]])[2]
+        A$i2$End[A$i2$ID == x][[1]] <- (input[[paste0("focusdateAreas", x)]])[2]
         
       }
       
-      A$fdat$class[A$fdat$fa == x][[1]] <- input[[paste0("class", x)]]
+      A$i2$Class[A$i2$ID == x][[1]] <- input[[paste0("class", x)]]
       
     }
     
-    A$cdat$ID <- as.list(1:nrow(A$cdat))
+    A$i3$ID <- as.list(1:nrow(A$i3))
     
     for (x in unlist(focusGroups)) {
       
-      A$cdat$weight[(A$cdat$cat == "Uncategorized") & (A$cdat$fa == x)][[1]] <- NA
+      A$i3$Weight[(A$i3$Name == "Uncategorized") & (A$i3$ID == x)][[1]] <- NA
       
     }
     
