@@ -345,7 +345,7 @@ setup_focusAreas <- function(input, output, session) {
   
   observeEvent({
     
-    IDs <- unlist(rv$A$i2$Name)[unlist(rv$A$i2$Name) != "Uncategorized"]
+    IDs <- unlist(rv$A$i2$ID)[unlist(rv$A$i2$Name) != "Uncategorized"]
     
     a <- lapply( IDs , function (x) {
       
@@ -389,6 +389,8 @@ setup_focusAreas <- function(input, output, session) {
     
     categoriesdat <- tibble(ID = list(), Name = list(), Notes = list(), End = list(), Start = list(), Weight = list(), 
                             i0 = list(), i1 = list(), i2 = list())
+    
+    ## ---------------------------------------- Iterator to bind data frames of categories into one data frame ----------------------------------- ##
     
     for (x in unlist(focusGroups)) {
       
@@ -445,7 +447,7 @@ setup_focusAreas <- function(input, output, session) {
     
     A$i3$ID <- as.list(1:nrow(A$i3))
     
-    for (x in unlist(focusGroups)) {
+    for (x in unlist(A$i3$ID)) {
       
       A$i3$Weight[(A$i3$Name == "Uncategorized") & (A$i3$ID == x)][[1]] <- NA
       
