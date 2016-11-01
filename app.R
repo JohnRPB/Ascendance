@@ -52,7 +52,7 @@ source(paste0(filepaths, "App/AssessmentModule.R"))
 source(paste0(filepaths, "App/InputModule.R"))
 
 #  "A_Johann.R"
-path <- paste0(filepaths, "A_attempt12.R")
+path <- paste0(filepaths, "A_attempt13.R")
 
 options(shiny.reactlog=TRUE)
 
@@ -119,7 +119,7 @@ pieChart_render <- function(id, groups) {
 }
 
 
-if (file.exists(path) == TRUE) {
+if (file.exists(path) == FALSE) {
   
   load(path, envir = .GlobalEnv)
   
@@ -184,8 +184,8 @@ if (file.exists(path) == TRUE) {
   
 } else {
   
-  A <<- new.env()
-  # load(path, envir = .GlobalEnv)
+  # A <<- new.env()
+  load(path, envir = .GlobalEnv)
   
   header <- dashboardHeader(title = "Ascendance")
   
@@ -210,7 +210,7 @@ if (file.exists(path) == TRUE) {
   server <- function(input, output) {
     
     tut <- reactiveValues()
-    tut$stage <- 1
+    tut$stage <- 3
     
     observe(priority = 1, {
       

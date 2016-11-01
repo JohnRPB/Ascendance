@@ -11,22 +11,38 @@ setup_focusPeriodUI <- function(id) {
   ns <- NS(id)
   
   rows <- tagList()
+  
   rows[[1]] <- fluidRow(
+    
     column(10, offset = 1, 
+           
            h2({"Step 3: Setting up focus period and creating tasks."}),
+           
            h4({"You will now select a date range for your first focus period. At the moment, it is best to make this
              at least three weeks in length."})
-           )
-           )
-  rows[[2]] <- fluidRow(
-    column(1, offset = 1, 
-           actionButton(ns("submit"), h4("Submit"))
-    ),
-    column(5,  
-           dateRangeInput(ns("focusrange"), label = "",  width = "600px")
+           
     )
+    
   )
+  
+  rows[[2]] <- fluidRow(
+    
+    column(1, offset = 1, 
+           
+           actionButton(ns("submit"), h4("Submit"))
+           
+    ),
+    
+    column(5,  
+           
+           dateRangeInput(ns("focusrange"), label = "",  width = "600px")
+           
+    )
+    
+  )
+  
   rows[[3]] <- uiOutput(ns("taskintro"))
+  
   rows
   
 }
@@ -42,6 +58,7 @@ setup_focusPeriod <- function(input, output, session, proceed) {
     output$taskintro <- renderUI({
       
       rows <- tagList()
+      
       rows[[1]] <- fluidRow(column(10, offset = 1, 
                                    h4({"Congratulations, you have initiated your first focus period! The next part will
                                      require some planning and forethought; think about all of the tasks and 
@@ -52,23 +69,33 @@ setup_focusPeriod <- function(input, output, session, proceed) {
                                    h4({"Continue adding tasks until you have listed all of the ones you can think of
                                      for your focus period. Then hit 'next' to advance to the final stage of 
                                      the setup."})))
+      
       rows[[2]] <- fluidRow(
+        
         column(2, offset = 1, 
+               
                actionButton(ns("addtask"), "Add Task")
+               
         )
+        
       )
+      
       rows[[3]] <- br()
       
       tags$div(id = ns("add"),  rows )
-                                   })
-                                   })
+      
+    })
+    
+  })
   
   inserted <- reactiveValues(tasknum = 1)
   
   observeEvent(input$addtask, priority = 3, {
     
     insertUI(
+      
       selector = paste0("#", ns("add")),
+      
       where = "afterEnd",
       
       ui = {
@@ -77,7 +104,7 @@ setup_focusPeriod <- function(input, output, session, proceed) {
         cols[[1]] <- column(2, offset = 1, 
                             textInput(ns(paste0("task", inserted$tasknum)), label = "Task name"))
         cols[[2]] <- column(2, selectInput(ns(paste0("focusArea", inserted$tasknum)), 
-                                           choices = unlist(A$fdat$fa), label = "Focus Area"))
+                                           choices = unlist(A$i2$Name), label = "Focus Area"))
         cols[[3]] <- column(2, uiOutput(ns(paste0("categoryUI", inserted$tasknum))))
         cols[[4]] <- column(2, numericInput(ns(paste0("hours", inserted$tasknum)), 
                                             value = 0, label = "Hours"))
@@ -99,8 +126,12 @@ setup_focusPeriod <- function(input, output, session, proceed) {
       
       output[[ index ]] <- renderUI({
         
+        #' get ID of focus area for which name equals user selection
+        
+        focusID <- A$i2$ID[ A$i2$Name == input[[focusArea]] ][[1]]
+        
         selectInput(ns(paste0("category", counter)), label = "Category",
-                    choices = unlist(A$fdat$cat[A$fdat$fa == input[[focusArea]] ]))
+                    choices =  unlist(A$i3$Name[A$i3$i2 == focusID]) ) #' get names of categories in focus area
         
       })
       
@@ -117,8 +148,8 @@ setup_focusPeriod <- function(input, output, session, proceed) {
     req(input[[paste0("task", num)]])
     
     inputsT <- lapply(1:num, function(x) {input[[paste0("task", x)]]})
-    inputsF <- lapply(1:num, function(x) {input[[paste0("focusArea", x)]]})
-    inputsC <- lapply(1:num, function(x) {input[[paste0("category", x)]]})
+    inputsF <- lapply(1:num, function(x) {A$i2$ID[A$i2$Name == input[[paste0("focusArea", x)]] ][[1]]})
+    inputsC <- lapply(1:num, function(x) {A$i3$ID[A$i3$Name == input[[paste0("category", x)]] ][[1]]})
     inputsE <- lapply(1:num, function(x) {
       
       hours <- as.difftime(input[[paste0("hours", x)]], units = "hours") 
@@ -131,25 +162,12 @@ setup_focusPeriod <- function(input, output, session, proceed) {
     inputsStart <- as.list(rep(as.POSIXct(Sys.time()), num))
     inputsEnd <- as.list(rep(as.POSIXct(Sys.time()), num))
     
-    A$tdat <- data.frame(cbind(tasks = inputsT, ID = as.list(1000:(1000 + num - 1)), fa = inputsF, cat = inputsC, est = inputsE, 
-                               start = inputsStart, end = inputsEnd))
+    A$i4 <- as_tibble(cbind(ID = as.list(1:(num)), Name = inputsT, Notes = rep("", num), Start = inputsStart, End = inputsEnd, Weight = rep(1/num, num),
+                            i0 = rep(1, num), i1 = rep(1, num), i2 = inputsF, i3 = inputsC))
     
-    
-    for (i in A$tdat$fa[!(duplicated(A$tdat$fa))]) {
-      
-      A$fdat$tasks[A$fdat$fa == i][[1]] <- unlist(A$tdat$tasks[A$tdat$fa == i])
-      
-      for (x in A$fdat$cat[A$fdat$fa == i][[1]]) {
-        
-        if (unlist(A$tdat$tasks[(A$tdat$cat == x) & (A$tdat$fa == i)]) %>% length == 0) {
-          
-        } else {
-          
-          A$cdat$tasks[(A$cdat$cat == x) & (A$cdat$fa == i)][[1]] <- unlist(A$tdat$tasks[(A$tdat$cat == x) & (A$tdat$fa == i)])
-        }
-      }
-      
-    }
+    A$atoms <- as_tibble(cbind(ID = as.list(1:(num)), Name = rep("", num), Notes = rep("", num), Extent = inputsE, Start = inputsStart, End = inputsEnd,
+                               Weight = rep(0, num), Class = rep("P", num), i0 = rep(1, num), i1 = rep(1, num), i2 = inputsF, i3 = inputsC, 
+                               i4 = as.list(1:(num))))
     
     
   })
