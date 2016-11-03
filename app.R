@@ -52,7 +52,8 @@ source(paste0(filepaths, "App/AssessmentModule.R"))
 source(paste0(filepaths, "App/InputModule.R"))
 
 #  "A_Johann.R"
-path <- paste0(filepaths, "A_attempt13.R")
+
+path <- paste0(filepaths, "A_attempt15.R")
 
 options(shiny.reactlog=TRUE)
 
@@ -210,7 +211,7 @@ if (file.exists(path) == FALSE) {
   server <- function(input, output) {
     
     tut <- reactiveValues()
-    tut$stage <- 3
+    tut$stage <- 4
     
     observe(priority = 1, {
       

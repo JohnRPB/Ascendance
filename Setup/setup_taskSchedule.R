@@ -55,17 +55,21 @@ setup_taskScheduleUI <- function(id) {
   
   ns <- NS(id)
   
-  len <- length(A$tdat$tasks)
+  len <- length(A$atoms$ID)
   
-  IDs <- A$tdat$ID %>% unlist %>% as.character
+  IDs <- A$atoms$ID %>% unlist %>% as.character
   
   IDs <- lapply(IDs, function(n) {
     
-    i <- A$tdat$tasks[A$tdat$ID == n][[1]]
-    j <- A$tdat$cat[A$tdat$ID == n][[1]]
-    k <- A$tdat$fa[A$tdat$ID == n][[1]]
+    catID <- A$atoms$i3[A$atoms$ID == n] %>% unlist
+    focusID <- A$atoms$i2[A$atoms$ID == n] %>% unlist
     
-      paste(k, j, i, sep = "-")
+    i <- A$atoms$Name[A$atoms$ID == n] %>% unlist
+    j <- A$i3$Name[A$i3$ID  ==  catID] %>% unlist
+    k <- A$i2$Name[A$i2$ID  ==  focusID] %>% unlist
+    
+    paste(k, j, i, sep = "-")
+      
   }) %>% unlist
   
   makeSlider <- function(x) {
@@ -104,18 +108,21 @@ setup_taskSchedule <- function(input, output, session, proceed, Path) {
   
   ############ ------------- Create observers to update start and end times for tasks ------------- ############
   
-  IDs <- A$tdat$ID %>% unlist %>% as.character
+  IDs <- A$atoms$ID %>% unlist %>% as.character
   
   lapply(IDs, function(n) {
     
-    i <- A$tdat$tasks[A$tdat$ID == n][[1]]
-    j <- A$tdat$cat[A$tdat$ID == n][[1]]
-    k <- A$tdat$fa[A$tdat$ID == n][[1]]
+    catID <- A$atoms$i3[A$atoms$ID == n] %>% unlist
+    focusID <- A$atoms$i2[A$atoms$ID == n] %>% unlist
+    
+    i <- A$atoms$Name[A$atoms$ID == n] %>% unlist
+    j <- A$i3$Name[A$i3$ID  ==  catID] %>% unlist
+    k <- A$i2$Name[A$i2$ID  ==  focusID] %>% unlist
     
     observeEvent(input[[paste0("slider_", paste(k, j, i, sep = "-"))]], priority = 2, {
       
-      A$tdat$start[A$tdat$ID == n] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[1]
-      A$tdat$end[A$tdat$ID == n] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[2]
+      A$atoms$Start[A$atoms$ID == n] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[1]
+      A$atoms$End[A$atoms$ID == n] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[2]
       
     })
     
@@ -127,13 +134,16 @@ setup_taskSchedule <- function(input, output, session, proceed, Path) {
     
   observeEvent({
     
-    IDs <- A$tdat$ID %>% unlist %>% as.character
+    IDs <- A$atoms$ID %>% unlist %>% as.character
     
     lapply(IDs, function(n) {
       
-      i <- A$tdat$tasks[A$tdat$ID == n][[1]]
-      j <- A$tdat$cat[A$tdat$ID == n][[1]]
-      k <- A$tdat$fa[A$tdat$ID == n][[1]]
+      catID <- A$atoms$i3[A$atoms$ID == n] %>% unlist
+      focusID <- A$atoms$i2[A$atoms$ID == n] %>% unlist
+      
+      i <- A$atoms$Name[A$atoms$ID == n] %>% unlist
+      j <- A$i3$Name[A$i3$ID  ==  catID] %>% unlist
+      k <- A$i2$Name[A$i2$ID  ==  focusID] %>% unlist
       
       input[[paste0("slider_", paste(k, j, i, sep = "-"))]]
       
@@ -141,8 +151,8 @@ setup_taskSchedule <- function(input, output, session, proceed, Path) {
     
   }, priority = 1, {
     
-    a <- A$tdat$start %>% unlist %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")
-    b <- A$tdat$end %>% unlist %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")
+    a <- A$atoms$Start %>% unlist %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")
+    b <- A$atoms$End %>% unlist %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")
     
     fp <- seq(as.POSIXct(A$fps[[1]][1], origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours"), 
               as.POSIXct(A$fps[[1]][2], origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours"), by = "days")
@@ -162,7 +172,7 @@ setup_taskSchedule <- function(input, output, session, proceed, Path) {
     
     opCs <- lapply(seq(length(a)), function(x) {
       
-      est <- A$tdat$est[[x]]
+      est <- A$atoms$Extent[[x]]
       units(est) <- "hours"
       
       a <- as.POSIXct(as.Date(floor_date(a[x], "day"), origin = "1970-01-01 00:00.00 UTC")) + as.difftime(7, units = "hours")
@@ -178,11 +188,11 @@ setup_taskSchedule <- function(input, output, session, proceed, Path) {
       
     })
     
-    names(opCs) <- as.character(unlist(A$tdat$ID))
+    names(opCs) <- as.character(unlist(A$atoms$ID))
     
     opCs <- data.frame(opCs)
     
-    names(opCs) <- as.character(unlist(A$tdat$ID))
+    names(opCs) <- as.character(unlist(A$atoms$ID))
     
     opCs[] <- lapply(1:length(opCs), function(x) {
       
@@ -190,110 +200,44 @@ setup_taskSchedule <- function(input, output, session, proceed, Path) {
       
     })
     
-    taskIDs <- lapply(A$cdat$ID, function(i) {
-      
-      a <- A$cdat$cat[A$cdat$ID == i][[1]]; b <- A$cdat$fa[A$cdat$ID == i][[1]]
-      
-      unlist(A$tdat$ID[(A$tdat$cat == a) & (A$tdat$fa == b)])
-      
-    })
+    temp <- opCs[,1:ncol(opCs)]
     
-    names(taskIDs) <- as.character(A$cdat$ID)
+    opMod <- cbind(fp = fp, temp)
+    opCurve <- cbind(fp = fp, cumsum(temp))
     
-    for (i in length(taskIDs):1) {
-      
-      if (length(taskIDs[[i]]) > 1) {
-        
-        optC <- rowSums(opCs[,as.character(taskIDs[[i]])])
-        
-      } else if (length(taskIDs[[i]]) == 0) {
-        
-        optC <- rep(0, nrow(opCs))
-        
-      } else {
-        
-        optC <- opCs[,as.character(taskIDs[[i]])]
-        
-      }
-      
-      opCs <- cbind(I(as.list(optC)), opCs)
-      
-      colnames(opCs)[1] <- names(taskIDs[i])
-      
-    }
+    dat <- temp %>% rowSums %>% as.difftime(. , units = "hours") %>% data.frame(fp = fp, full = . )
+    datC <- temp %>% cumsum %>% rowSums %>% as.difftime(. , units = "hours") %>% data.frame(fp = fp, full = . )
     
-    for (i in unlist(A$fdat$fa)) {
-      
-      index <- unlist(A$tdat$ID[A$tdat$fa == i])
-      
-      if (length(index) > 1) {
-        
-        
-        optC <- rowSums(opCs[,as.character(index)])
-        
-      } else if (length(index) == 0) {
-        
-        optC <- rep(0, nrow(opCs))
-        
-      } else {
-        
-        optC <- opCs[,as.character(index)]
-        
-      }
-      
-      opCs <- cbind(I(as.list(optC)), opCs)
-      
-      colnames(opCs)[1] <- i
-      
-    }
+    first <- (opCurve[2:ncol(opCurve)])[opCurve$fp == opCurve$fp[1],] %>% rowSums %>% unname %>% as.difftime(. , units = "hours")
     
-    opCs <- cbind(full =  I(as.list(rowSums(opCs[,colnames(opCs) %in% A$tdat$ID]))), opCs)
+    second <- (opCurve[2:ncol(opCurve)])[opCurve$fp > opCurve$fp[1],] %>% rowSums %>% unname %>% as.difftime(. , units = "hours")
     
-    opCs[] <- lapply(1:ncol(opCs), function(x) {
-      
-      as.difftime(unlist(opCs[,x]), units = "hours")
-      
-    })
+    x <- c(opCurve$fp[1], opCurve$fp[1], opCurve$fp[opCurve$fp > opCurve$fp[1]], opCurve$fp[opCurve$fp == max(opCurve$fp)], opCurve$fp[1])
     
-    opC <- opCs
-    
-    opC[] <- lapply(1:ncol(opC), function(x) {
-      
-      cumtime(unlist(opCs[,x]))
-      
-    })
-    
-    opCs <- cbind(fp = fp, opCs)
-    opC <- cbind(fp = fp, opC)
-    
-    x <- c(opC$fp[1], opC$fp[1], opC$fp[opC$fp > opC$fp[1]], opC$fp[opC$fp == max(opC$fp)], opC$fp[1])
-    
-    y <- c(as.difftime(0, units = "hours"), opC$full[opC$fp == opC$fp[1]], opC$full[opC$fp > opC$fp[1]],
-           as.difftime(0, units = "hours"), as.difftime(0, units = "hours"))
+    y <- c(as.difftime(0, units = "hours"), first, second, as.difftime(0, units = "hours"), as.difftime(0, units = "hours"))
     
     shade <- data.frame(x, y)
     
-    A$opCs <- opCs
-    A$opC <- opC
+    A$opCurve <- as_tibble(opCurve)
     
-    tentr <- as.list(rep(Sys.time(), length(A$tdat$ID)))
-    names(tentr) <- colnames(A$opC)[colnames(A$opC) %in% A$tdat$ID]
+    tentr <- as.list(rep(Sys.time(), length(A$atoms$ID)))
+    names(tentr) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
     tentr <- data.frame(tentr, stringsAsFactors = FALSE)
-    colnames(tentr) <- colnames(A$opC)[colnames(A$opC) %in% A$tdat$ID]
+    colnames(tentr) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
     
     tentr <- lapply(1:2, function(x) { tentr })
     
     names(tentr) <- c("start", "end")
     
-    auto <- as.list(rep("", length(A$tdat$tasks)))
-    names(auto) <- colnames(A$opC)[colnames(A$opC) %in% A$tdat$ID]
+    auto <- as.list(rep("", length(A$atoms$Name)))
+    names(auto) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
     auto <- data.frame(auto, stringsAsFactors = FALSE)
-    colnames(auto) <- colnames(A$opC)[colnames(A$opC) %in% A$tdat$ID]
+    colnames(auto) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
     
-    eff <- as.list(rep(0, length(A$tdat$tasks)))
-    names(eff) <- colnames(A$opC)[colnames(A$opC) %in% A$tdat$ID]
+    eff <- as.list(rep(0, length(A$atoms$Name)))
+    names(eff) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
     eff <- data.frame(eff, stringsAsFactors = FALSE)
-    colnames(eff) <- colnames(A$opC)[colnames(A$opC) %in% A$tdat$ID]
+    colnames(eff) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
     
     dummy <- list()
     
@@ -303,9 +247,9 @@ setup_taskSchedule <- function(input, output, session, proceed, Path) {
     
     output$workDist <- renderPlot({
       
-      ggplot(data = A$opCs, aes(x = fp, y = full)) + geom_bar(stat = "identity") + ggtitle("Workload per day") + 
+      ggplot(data = dat, aes(x = fp, y = full)) + geom_bar(stat = "identity") + ggtitle("Workload per day") + 
         theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-        scale_x_datetime(breaks = A$opCs$fp, labels = format(A$opCs$fp,  "%a %d"), name = NULL) + 
+        scale_x_datetime(breaks = A$opCurve$fp, labels = format(A$opCurve$fp,  "%a %d"), name = NULL) + 
         scale_y_continuous(name = NULL)
       
     })
