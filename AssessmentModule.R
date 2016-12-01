@@ -89,7 +89,7 @@ curvebox <- function(input, output, session, ID, Path) {
       
       ggplot(data = Dat, aes(x = fp, y = ID)) +  geom_polygon(data = shade, aes(x, y), alpha = .80) + 
         theme(axis.text.x = element_text(angle = 90, vjust = .5), panel.grid.minor.x = element_blank()) +
-        scale_x_datetime(breaks = Dat$fp, labels = format(Dat$fp,  "%a %d"), name = NULL) + 
+        scale_x_datetime(breaks = Dat$fp, labels = format(Dat$fp +as.difftime(1, units = "days"),  "%a %d"), name = NULL) + 
         scale_y_continuous(name = NULL) + geom_line(data = dat, aes(x = fp, y = bcggplot), color = "steelblue", size = 1.5) + 
         geom_point(data = pointdat, aes(x = fp, y = bcggplot), color = "steelblue", size = 4)
       
@@ -411,7 +411,7 @@ assess <- function(input, output, session, Path) {
     ggplot(data = A$opC, aes(x = fp, y = full)) +  
       geom_polygon(data = shade, aes(x, y), alpha = .80) + 
       theme(axis.text.x = element_text(angle = 90, vjust = .5), panel.grid.minor.x = element_blank()) +
-      scale_x_datetime(breaks = A$opC$fp, labels = format(A$opC$fp,  "%a %d"), name = NULL) + 
+      scale_x_datetime(breaks = A$opC$fp, labels = format(A$opC$fp+as.difftime(1, units = "days"),  "%a %d"), name = NULL) + 
       scale_y_continuous(name = NULL) + 
       geom_line(data = Logged, aes(x = fp, y = full), color = "steelblue", size = 1.5) + 
       geom_point(data = pointdat, aes(x = fp, y = full), color = "steelblue", size = 4)
