@@ -111,11 +111,11 @@ assessUI <- function(id) {
              
              tabPanel("Hours", 
                       fluidRow(column(12, plotOutput(ns("hoursGlobal")))),
-                      fluidRow(column(12, offset = 1, h4("General"), h4("VirtualGPA")))
+                      fluidRow(column(12, offset = 1))
                       ),
              tabPanel("Tasks", br(),
                       fluidRow(column(12, dataTableOutput(ns("priorGlobal")))),
-                      fluidRow(column(5, offset = 2, h4("General")), column(5, h4("VirtualGPA")))
+                      fluidRow(column(5, offset = 2, h4("General")))
                       )
              
            )
