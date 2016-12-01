@@ -109,8 +109,8 @@ assessUI <- function(id) {
            
            tabBox(title = "Global Assessment", width = 11,
              
-             tabPanel("Priority", 
-                      fluidRow(column(12, plotOutput(ns("priorGlobal")))),
+             tabPanel("Tasks", 
+                      fluidRow(column(12, dataTableOutput(ns("priorGlobal")))),
                       fluidRow(column(12, offset = 1, h4("General"), h4("VirtualGPA")))
                       ),
              tabPanel("Efficiency",
@@ -415,6 +415,22 @@ assess <- function(input, output, session, Path) {
       scale_y_continuous(name = NULL) + 
       geom_line(data = Logged, aes(x = fp, y = full), color = "steelblue", size = 1.5) + 
       geom_point(data = pointdat, aes(x = fp, y = full), color = "steelblue", size = 4)
+    
+  })
+  
+  output$priorGlobal <- renderDataTable(options = list(pageLength = 10), {
+    
+    dat <- A$tdat
+    
+    dat$end <- as.list(as.POSIXct(unlist(dat$end), origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")) %>% I
+    dat$end <- format(dat$end, '%Y-%m-%d')
+    dat$start <- as.list(as.POSIXct(unlist(dat$start), origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")) %>% I
+    dat$start <- format(dat$start, '%Y-%m-%d')
+    newcol <- dat$est %>% unlist %>% as.difftime( . , units = "mins")
+    units(newcol) <- "hours"
+    dat$est <- newcol %>% as.list
+    
+    dat
     
   })
   
