@@ -109,16 +109,12 @@ assessUI <- function(id) {
            
            tabBox(title = "Global Assessment", width = 11,
              
-             tabPanel("Tasks", 
-                      fluidRow(column(12, dataTableOutput(ns("priorGlobal")))),
-                      fluidRow(column(12, offset = 1, h4("General"), h4("VirtualGPA")))
-                      ),
-             tabPanel("Efficiency",
-                      fluidRow(column(12, plotOutput(ns("effGlobal")))),
-                      fluidRow(column(12, offset = 1, h4("General"), h4("VirtualGPA")))
-                      ),
-             tabPanel("Hours", br(),
+             tabPanel("Hours", 
                       fluidRow(column(12, plotOutput(ns("hoursGlobal")))),
+                      fluidRow(column(12, offset = 1, h4("General"), h4("VirtualGPA")))
+                      ),
+             tabPanel("Tasks", br(),
+                      fluidRow(column(12, dataTableOutput(ns("priorGlobal")))),
                       fluidRow(column(5, offset = 2, h4("General")), column(5, h4("VirtualGPA")))
                       )
              
