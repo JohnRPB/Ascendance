@@ -43,8 +43,7 @@ curveboxUI <- function(id, ID) {
   
   ns <- NS(id)
   
-  box(width = 6, title = ID, fluidRow(column(12, plotOutput(ns("curve")))),
-      fluidRow(column(3, offset = 2, h4("General")), column(5, h4("VirtualGPA"))))
+  box(width = 6, title = ID, fluidRow(column(12, plotOutput(ns("curve")))))
   
   
 }

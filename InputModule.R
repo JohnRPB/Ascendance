@@ -104,7 +104,7 @@ Input <-function(input, output, session, Path) {
         } else {
           
           A$tentr$end[nrow(A$tentr$end), ID] <- now
-          A$tentr$eff[nrow(A$tentr$eff), ID] <- input[[paste0("slider_", obsnum)]]
+          A$tentr$eff[nrow(A$tentr$eff), ID] <- 0
           
           pressed[[paste0("val_", obsnum)]] <- pressed[[paste0("val_", obsnum)]] +1
           
@@ -135,7 +135,7 @@ Input <-function(input, output, session, Path) {
             
             A$tentr$start[nrow(A$tentr$start), ID] <- start
             A$tentr$end[nrow(A$tentr$end), ID] <- end
-            A$tentr$eff[nrow(A$tentr$eff), ID] <- input[[paste0("slider_", obsnum)]]
+            A$tentr$eff[nrow(A$tentr$eff), ID] <- 0
             
           }
         
@@ -166,13 +166,11 @@ Input <-function(input, output, session, Path) {
         Row[[1]] <- fluidRow(column(5, h4(paste0(input[["task"]], " ", "(", add$x, ")"))))
         Row[[2]] <- do.call(fluidRow, cols)
         taskRow <- fluidRow(column(5, Row), 
-                            column(1, checkboxInput(ns(paste0("complete_", add$x)), label = "Completed?")),
-                            column(5, textInput(ns(paste0("note_", add$x)), label = "Note"))
+                            column(1, checkboxInput(ns(paste0("complete_", add$x)), label = "Completed?"))
         )
         fluidRow(column(9, offset =1, wellPanel(taskRow, fluidRow(
           
-          column(9, sliderInput(ns(paste0("slider_", add$x)), label = "Estimated Efficiency", 
-                                min = 0, max = 1, value = .5, step = .01)),
+          column(9, textInput(ns(paste0("note_", add$x)), label = "Note")),
           
           column(1, actionButton(ns(paste0("record_", add$x)), color = "darkgrey", label = h4("Record")))
           

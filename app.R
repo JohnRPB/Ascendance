@@ -160,7 +160,7 @@ if (file.exists(path) == TRUE) {
   
   load(path, envir = .GlobalEnv)
   
-  header <- dashboardHeader(title = "Ascendance")
+  header <- dashboardHeader(title = "Ascendance (R)")
   
   sidebar <- dashboardSidebar( sidebarMenuOutput("menu") )
   
@@ -177,6 +177,8 @@ if (file.exists(path) == TRUE) {
               uiOutput("uiInput"))
               
       )
+    
+    
     
   })
   
