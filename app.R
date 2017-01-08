@@ -44,6 +44,7 @@ require(shiny)
 # filepaths <- "C:/Users/Johann/Documents/Ascendance/"
 filepaths <- "/home/alan/Documents/Ascendance/"
 
+source(paste0(filepaths, "App/GeneralFunctions.R"))
 source(paste0(filepaths, "App/Setup/setup_focusAreas.R"))
 source(paste0(filepaths, "App/Setup/setup_categories.R"))
 source(paste0(filepaths, "App/Setup/setup_focusPeriod.R"))
@@ -53,7 +54,7 @@ source(paste0(filepaths, "App/InputModule.R"))
 
 #  "A_Johann.R"
 
-path <- paste0(filepaths, "A_attempt15.R")
+path <- paste0(filepaths, "A_attempt20.R")
 
 options(shiny.reactlog=TRUE)
 
@@ -65,60 +66,7 @@ nameObject <- function(name, object, Envir = .GlobalEnv) {
   assign(nm,v, envir = Envir)
 }
 
-#'
-
-#' InputFunc
-
-build_slider <- function(id, label, mxmi=c(0,1), val= runif(1, min = 0, max = 1)){
-  sliderInput(id,
-              label = label,
-              min = mxmi[1],
-              max = mxmi[2],
-              value = val, 
-              ticks = FALSE, 
-              round = FALSE)
-}
-
-build_calendar <- function(id, label) {
-  dateRangeInput(id, label = label)
-}
-
-build_time <- function(id, label) {
-  textInput(id, label = label, value = "0")        
-}
-
-build_focus_input <- function(focusAreas) {
-  fluidRow(h3(paste(focusAreas)))          
-}
-
-build_goals <- function(id, label, value) {
-  textInput(id, label = label, value)        
-}
-
-pieChart_output <- function(id) {
-  
-  column(3, plotOutput(paste("pie_", id, sep = "")))
-  
-}
-
 colfunc <- colorRampPalette(c("slategray1", "deepskyblue4"))
-
-pieChart_render <- function(id, groups) {
-  
-  output[[paste("pie_", id, sep = "")]] <- renderPlot({
-    
-    weights <- rep(1, length(groups))/length(groups)
-    
-    dfT <- data.frame(subjects = groups, value = weights)
-    
-    ggplot(dfT, aes(x = "", y = value, fill = groups)) + geom_bar(width = 2, stat = "identity") +
-      coord_polar("y", start=0) + scale_fill_manual(values = colfunc(length(groups))) + 
-      theme(axis.title.x = element_blank()) + theme(axis.title.y = element_blank())
-    
-  })
-  
-}
-
 
 if (file.exists(path) == FALSE) {
   

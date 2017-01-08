@@ -1,21 +1,62 @@
-################################################################################################################################
-#############------------------------------------------------------------------------------------------------------#############
-#############------------------------------------ Setup Module 2: Categories --------------------------------------#############
-#############------------------------------------------------------------------------------------------------------#############
-################################################################################################################################
-
-#' This is the tutorial module for prioritizing categories within focus areas.
+#############################################################################################################################################################
+#############-----------------------------------------------------------------------------------------------------------------------------------#############
+#############------------------------------------------------- Setup Module 2: Categories ------------------------------------------------------#############
+#############-----------------------------------------------------------------------------------------------------------------------------------#############
+#############################################################################################################################################################
+#'
+#' SUMMARY: 
+#' 
+#' User adjusts weights for categories
+#'
+#' MODULE MAP:
+#'   
+#' UI
+#' 
+#' (1)  ---- user presented with a pie chart for each of their focus areas, subdivided into their selected categories, with '+/-' buttons that can be used
+#'      ---- to adjust the weights of the categories.
+#' (2)  ---- user presses buttons until each category is appropriately weighted
+#' (3)  ---- user presses 'Next'
+#'
+#' 
+#' SERVER
+#' 
+#' (0)  ---- main module calls pie chart module as many times as there are focus areas
+#' (1)  ---- each pie chart module creates one observer for its pie chart and a dynamic number of observers for each of its '+/-' buttons.
+#' (2)  ---- i3 weights re-adjusted
+#' (3)  ---- transition to next module
+#' 
+#' KEY COMPONENTS:
+#' 
+#' -- USER INTERFACE
+#' ---- PIEBOX MODULE
+#' ---- MAIN MODULE
+#' 
+#' NOTES:
+#' 
 #' 
 
-#' Pie chart box module
-#' 
-#' module function
+##################################################################################################################################################################
+#############------------------------------------------------------------- PIEBOX MODULE ------------------------------------------------------------#############
+##################################################################################################################################################################
 
-#' the id of the piebox ui module is the focus group being generated for
+#' Define function that outputs a chosen number of colors picked from a gradient
+
+colfunc <- colorRampPalette(c("slategray1", "deepskyblue4"))
+
+#' ====================================================================| USER INTERFACE |====================================================================
+#'  
+#' Generate one simple box with a pie chart and '+' and '-' buttons
 
 pieboxUI <- function(id, ID) {
   
-  ns <- NS(id)
+  ns <- NS(id) #' namespace
+  
+  #' ---------------------------------------| STORAGE |-------------------------------------------
+  #' 
+  #' Define function to be called, and select and store the IDs of the relevant categories to 
+  #' making the box 
+  
+  #' Define function to create button pairs for each category in module focus area
   
   prioritySet <- function(x) {
     
@@ -28,8 +69,14 @@ pieboxUI <- function(id, ID) {
     
   }
   
+  #' Find IDs of categories within focus area selected for module and store
+  
   IDs <- unlist(A$i3$ID[A$i3$i2 == ID])
-  IDs <- IDs[unlist(A$i3$Name[A$i3$i2 == ID]) != "Uncategorized"]
+  IDs <- IDs[unlist(A$i3$Name[A$i3$i2 == ID]) != "Uncategorized"] 
+  
+  #' -----------------------------------| GENERATE BOX UI |----------------------------------------
+  #'
+  #' Call box ui with one name-spaced pie chart output and as many sets of buttons as necessary.
   
   if (length(IDs) > 1) {
     
@@ -39,78 +86,98 @@ pieboxUI <- function(id, ID) {
   
 }
 
-# the piebox server must be passed the focus area of the box in the argument 'ID'
+#' =====================================================================| SERVER |=====================================================================
+#'  
+#' Create the buttons' observers, and one observer to control the pie chart in the box
 
-piebox <- function(input, output, session, ID) {
+piebox <- function(input, output, session, selectedNode) {
+  
+  #' ---------------------------------------------| SETUP |---------------------------------------------------
+  
+  #' Find IDs of categories, within focus area selected for module, and store
+  
+  IDs <- unlist(A$i3$ID[A$i3$i2 == selectedNode])
+  IDs <- IDs[unlist(A$i3$Name[A$i3$i2 == selectedNode]) != "Uncategorized"] 
+  
+  #' Proxy reactive object
   
   rv <- reactiveValues()
   
-  rv$A <- A
+  rv$i3_weights <- A$i3$Weight[A$i3$ID %in% IDs] %>% unlist
   
-  IDs <- unlist(A$i3$ID[A$i3$i2 == ID])[unlist(A$i3$Name[A$i3$i2 == ID]) != "Uncategorized"]
+  
+  #' ---------------------------------------| PLUS/MINUS OBSERVERS |-------------------------------------------
+  #'
+  #' Create two lists of observers, one for the '+' and one for the '-' buttons, and express them
+  
+  #' Use IDs to generate '+' observers corresponding to every category 
   
   lapply(IDs, function (x) {
+    
+    #' Observer adds some to target category weight but controls sum of category weights to remain 
+    #' equal to 1.
     
     observeEvent(input[[paste0("goplus_", x)]], {
       
-      rv$A$i3$Weight[rv$A$i3$ID == x][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == x][[1]] + .01
+      #' Add .01 to weight of category with ID == x
+      
+      A$i3$Weight[A$i3$ID == x][[1]] <- A$i3$Weight[A$i3$ID == x][[1]] + .01
+      
+      #' Subtract what was added to previous category to overall, but from all areas equally
       
       for (i in IDs[!(IDs %in% x)]) {
         
-        rv$A$i3$Weight[rv$A$i3$ID == i][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == i][[1]] - (.01)/(length(IDs)-1)
+        A$i3$Weight[A$i3$ID == i][[1]] <- A$i3$Weight[A$i3$ID == i][[1]] - (.01)/(length(IDs)-1)
         
       }
+      
+      #' Reset proxy reactive object
+      
+      rv$i3_weights <- A$i3$Weight[A$i3$ID %in% IDs] %>% unlist
       
     })
     
   })
+  
+  #' Use IDs to generate '-' observers corresponding to every category 
   
   lapply(IDs, function (x) {
     
+    #' Observer subtracts some from target category weight but controls sum of category weights to remain 
+    #' equal to 1.
+    
     observeEvent(input[[paste0("gominus_", x)]], {
       
-      rv$A$i3$Weight[rv$A$i3$ID == x][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == x][[1]] - .01
+      #' Subtract .01 to weight of category with ID == x
+
+      A$i3$Weight[A$i3$ID == x][[1]] <- A$i3$Weight[A$i3$ID == x][[1]] - .01
+      
+      #' Add what was subtracted from previous category to overall, but from all areas equally
       
       for (i in IDs[!(IDs %in% x)]) {
         
-        rv$A$i3$Weight[rv$A$i3$ID == i][[1]] <- rv$A$i3$Weight[rv$A$i3$ID == i][[1]] + (.01)/(length(IDs)-1)
+        A$i3$Weight[A$i3$ID == i][[1]] <- A$i3$Weight[A$i3$ID == i][[1]] + (.01)/(length(IDs)-1)
         
       }
+      
+      #' Reset proxy reactive object
+      
+      rv$i3_weights <- A$i3$Weight[A$i3$ID %in% IDs] %>% unlist
       
     })
     
   })
   
-  observeEvent({
-    
-    IDs <- unlist(rv$A$i3$ID[rv$A$i3$i2 == ID])
-    IDs <- IDs[unlist(rv$A$i3$Name[rv$A$i3$i2 == ID]) != "Uncategorized"]
-    
-    if (length(IDs) > 1) {
-      
-      a <- lapply(IDs, function (x) {
-        
-        input[[paste0("goplus_", x)]]      
-        
-      })
-      
-      b <- lapply(IDs, function (x) {
-        
-        input[[paste0("gominus_", x)]]      
-        
-      })
-      
-      append(a, b)
-      
-    }
-    
-  }, {
+  #' -----------------------------------------| DNYAMIC PIE CHART |--------------------------------------------
+  #'
+  #' Controlling for 1 or fewer user-submitted categories (in which case no pie chart), generate dynamic pie
+  #' chart that responds to pressing '+' or '-' buttons.
     
     if (length(IDs) > 1) {
       
       output$pie <- renderPlot({
         
-        rv$i3_weights <- unlist(rv$A$i3$Weight[(rv$A$i3$i2 == ID) & (rv$A$i3$Name != "Uncategorized")])
+        #' Save data frame used to generate pie chart, depending on reactive value rv$weights.
         
         dfT <- data.frame(subjects = IDs, value = rv$i3_weights)
         
@@ -121,12 +188,16 @@ piebox <- function(input, output, session, ID) {
       })
       
     }
-    
-  })
   
 }
 
-#' 
+##################################################################################################################################################################
+#############-------------------------------------------------------------- MAIN MODULE --------------------------------------------------------------############
+##################################################################################################################################################################
+
+#' ====================================================================| USER INTERFACE |====================================================================
+#'  
+#' Display some instructions and call dynamic number of pieboxUIs
 
 setup_categoriesUI <- function(id, label = "categories") {
   
@@ -148,14 +219,21 @@ setup_categoriesUI <- function(id, label = "categories") {
   
 }
 
+#' ========================================================================| SERVER |========================================================================
+#'  
+#' Call dynamic number of piebox (server) modules
+
 setup_categories <- function(input, output, session) {
   
   focusGroups <- unlist(A$i2$ID[A$i2$Name != "Uncategorized"])
   
   lapply(focusGroups, function(id) {
     
-    callModule(piebox, id, ID = id)
+    #' Call piebox server, give it an identification, and 
+    
+    callModule(piebox, id, selectedNode = id)
     
   })
   
 }
+

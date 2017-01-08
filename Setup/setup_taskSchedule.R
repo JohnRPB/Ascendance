@@ -1,87 +1,79 @@
-################################################################################################################################
-#############------------------------------------------------------------------------------------------------------#############
-#############------------------------------------ Setup Module 4: Task Scheulde -----------------------------------#############
-#############------------------------------------------------------------------------------------------------------#############
-################################################################################################################################
-
-#' This module will allow you to play with the absolute start and end times for tasks to arrive at a word distribution
-#' that is comfortable for you. 
+#################################################################################################################################################################
+#############---------------------------------------------------------------------------------------------------------------------------------------#############
+#############-------------------------------------------------- Setup Module 4: Scheduling tasks ---------------------------------------------------#############
+#############---------------------------------------------------------------------------------------------------------------------------------------#############
+#################################################################################################################################################################
+#'
+#' SUMMARY:
 #' 
-#' PROTOCOL FOR THE SETUP PROCESS:
+#' User adjusts sliders that set start and end points for their tasks, observing the effects of this on a dynamic plot of their work distribution.
 #' 
-#' Having reached this module, and stopped the app (as instructed by the writing within it), you will need to do the 
-#' following things, in order to run it again such that it will record your adjustments:
+#' MODULE MAP:
 #' 
-#' (1) Go the main app script file and find the conditional , 'file.exists(path) == TRUE'. Set 'TRUE' to 'FALSE'.
-#' (2) Find the line, 'A <<- new.env()'. Comment out that line and uncomment the line below it.
-#' (3) Find the line, 'tut$stage <- 1'. Change '1' to '4'. Save the app script file.
-#' (4) Hit the 'Run App' button on the main app script file and use the module as normally; play with the sliders 
-#' until you are satisfied with your result (you may still encounter the fixed first two days problem.) Then hit 
-#' 'Next'. The app will stop. THEN COME BACK AND READ THE REST OF THIS!
-#' (5) Go back to the main app script file and change the parts of script specified in steps (1)-(2) back to the way
-#' they were. Hit the 'Run App' button again. You are now done with the setup process and can use the main app.
+#' UI 
 #' 
-#' NOTE: Use the 'Input' module carefully; only click 'Log Time' if a task name appears in the user interface 
-#' component labeled 'Task'. Do not try to log time for a task and add a new task in the same run of the app. When
-#' any kind of change has been made to your data, the safest route is to stop the app and then run it again, to see
-#' the changes. 
+#' (1) ---- User presented with double-ended sliders matched to their tasks; each end controls the start and end points of a task, respectively; as well as a
+#'     ---- plot of their work distribution (in hours per day)
+#' (2) ---- User adjusts a slider
+#' (3) ---- Work Distribution plot shifts to reflect adjustment
+#' (4) ---- User adjusts a slider again, return to step (2)
+#' (5) ---- User presses 'Next'
 #' 
-#' Right now, Ascendance is little more advanced than the original TimeProg prototype; the only thing it does is 
-#' reliably log the time you've spent in pursuit of your goals, and lets you add new tasks. You can see individual 
-#' tasks by stopping the app and typing 'A$tdat' in the command line.
+#' SERVER
 #' 
-#' It is probably best to use Ascendance with a companion sheet of paper; keep a record of the start and end times
-#' for your work sessions and the tasks they belong to, then log that information in Ascendance. Note manually when
-#' the task is completed (Ascendance will later be able to incorporate this information and adjust the optimal curve 
-#' accordingly, but right now it is primariliy a time-logger, only *very* roughly an accountability tool). You will
-#' need to keep track of individual task completion by the usual methods you employ; right now, you can only see your
-#' progression for different focus areas, and overall. That is, Ascendance only helps you get an idea of the general
-#' amount of effort you are putting into your focus areas and overall workload.
+#' (1) ---- Observers created for every slider and for the work distribution chart.
+#' (2) -------- Appropriate slider observer invalidates, activates, and stores values of both ends of the slider as the Start and End points of the slider's 
+#'     -------- task, respectively (in the atoms data frame).
+#'     -------- Plot observer invalidates, activates, retreives Start and End points from atoms data frame, and updates chart
+#' (5) ---- Transition to next module
 #' 
-
-cumtime <- function(x) {
-  
-  for (i in 1:(length(x)-1)) {
-    
-    x[i+1] <- x[i] + x[i+1] 
-    
-  }
-  
-  x
-  
-}
+#' KEY COMPONENTS:
+#' 
+#' SLIDER OBSERVERS
+#' PLOT OBSERVERS
+#' 
+#' NOTES:
+#' 
 
 setup_taskScheduleUI <- function(id) {
   
-  ns <- NS(id)
+  ns <- NS(id) # namespace function
   
-  len <- length(A$atoms$ID)
+  #' List of unique names with format "[focus area]_[category]_[task]", for use with sliders.
+  #' 
+  #' --------------
   
-  IDs <- A$atoms$ID %>% unlist %>% as.character
+  IDs <- A$iH[[length(A$iH)]]$ID %>% unlist %>% as.character
   
   IDs <- lapply(IDs, function(n) {
     
-    catID <- A$atoms$i3[A$atoms$ID == n] %>% unlist
-    focusID <- A$atoms$i2[A$atoms$ID == n] %>% unlist
+    atoms <- A$iH[[length(A$iH)]]
     
-    i <- A$atoms$Name[A$atoms$ID == n] %>% unlist
-    j <- A$i3$Name[A$i3$ID  ==  catID] %>% unlist
-    k <- A$i2$Name[A$i2$ID  ==  focusID] %>% unlist
+    i <- n
+    j <- atoms$i3[atoms$ID == n] %>% unlist
+    k <- atoms$i2[atoms$ID == n] %>% unlist
     
     paste(k, j, i, sep = "-")
-      
+    
   }) %>% unlist
+  
+  #' --------------
+  #'
+  
+  #' Function to create slider-box, with unique identifier as title
   
   makeSlider <- function(x) {
     
-    box(width = 3, sliderInput(inputId = ns(paste0("slider_", x)), 
-                               label = x, 
-                               value = as.POSIXct(A$fps[[1]]) + as.difftime(7, units = "hours"),
-                               min = as.POSIXct(A$fps[[1]][1]) + as.difftime(7, units = "hours"),
-                               max = as.POSIXct(A$fps[[1]][2]) + as.difftime(7, units = "hours"))
-        )
+    box(width = 3, sliderInput(inputId = ns(paste0("slider_", x)), label = x, value = as.POSIXct(A$fps[[1]]),
+                               min = as.POSIXct(A$fps[[1]][1]), 
+                               max = as.POSIXct(A$fps[[1]][2]))
+    )
     
   }
+  
+  #' ui page structure to host sliders
+  #' 
+  #' -----------------
   
   rows <- tagList()
   rows[[1]] <- fluidRow(
@@ -100,164 +92,80 @@ setup_taskScheduleUI <- function(id) {
   rows[[4]] <- fluidRow(column(10, offset = 1, plotOutput(ns("workDist"))))
   rows
   
+  #' ------------------
+  
 }
+
+#' Server function needs to create many observers, one for each slider, as well as a plot observer that reacts to the sliders
 
 setup_taskSchedule <- function(input, output, session, proceed, Path) {
   
   ns <- session$ns
   
-  ############ ------------- Create observers to update start and end times for tasks ------------- ############
+  rv <- reactiveValues(dat = NULL)
   
-  IDs <- A$atoms$ID %>% unlist %>% as.character
+  #' ================================================================| SLIDER OBSERVERS |=================================================================
+  #'  
+  #' Create reactive list of observers each of which responds to one slider.
   
-  lapply(IDs, function(n) {
+  {
     
-    catID <- A$atoms$i3[A$atoms$ID == n] %>% unlist
-    focusID <- A$atoms$i2[A$atoms$ID == n] %>% unlist
-    
-    i <- A$atoms$Name[A$atoms$ID == n] %>% unlist
-    j <- A$i3$Name[A$i3$ID  ==  catID] %>% unlist
-    k <- A$i2$Name[A$i2$ID  ==  focusID] %>% unlist
-    
-    observeEvent(input[[paste0("slider_", paste(k, j, i, sep = "-"))]], priority = 2, {
-      
-      A$atoms$Start[A$atoms$ID == n] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[1]
-      A$atoms$End[A$atoms$ID == n] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[2]
-      
-    })
-    
-  })
-  
-  ############ ------------ Laborious process of building optimal curve for data frame ------------ ############
-
-  #' Setting up single observer to react to any one of the sliders and update its graph accordingly
-    
-  observeEvent({
-    
-    IDs <- A$atoms$ID %>% unlist %>% as.character
+    IDs <- A$iH[[length(A$iH)]]$ID %>% unlist %>% as.character
     
     lapply(IDs, function(n) {
       
-      catID <- A$atoms$i3[A$atoms$ID == n] %>% unlist
-      focusID <- A$atoms$i2[A$atoms$ID == n] %>% unlist
+      atoms <- A$iH[[length(A$iH)]]
       
-      i <- A$atoms$Name[A$atoms$ID == n] %>% unlist
-      j <- A$i3$Name[A$i3$ID  ==  catID] %>% unlist
-      k <- A$i2$Name[A$i2$ID  ==  focusID] %>% unlist
+      i <- n
+      j <- atoms$i3[atoms$ID == n] %>% unlist
+      k <- atoms$i2[atoms$ID == n] %>% unlist
       
-      input[[paste0("slider_", paste(k, j, i, sep = "-"))]]
-      
-    })
-    
-  }, priority = 1, {
-    
-    a <- A$atoms$Start %>% unlist %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")
-    b <- A$atoms$End %>% unlist %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours")
-    
-    fp <- seq(as.POSIXct(A$fps[[1]][1], origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours"), 
-              as.POSIXct(A$fps[[1]][2], origin = "1970-01-01 00:00.00 UTC") + as.difftime(7, units = "hours"), by = "days")
-    
-    taskperiods <- lapply(seq(length(a)), function(x) {
-      
-      seq(from = as.POSIXct(as.Date(floor_date(a[x], "day"), origin = "1970-01-01 00:00.00 UTC")) + as.difftime(7, units = "hours"), 
-          to =  as.POSIXct(as.Date(ceiling_date(b[x], "day"), origin = "1970-01-01 00:00.00 UTC")) + as.difftime(7, units = "hours"), by = "days")
-      
-    })
-    
-    periodsIndex <- lapply(seq(length(a)), function(x) {
-      
-      fp %in% taskperiods[[x]]
-      
-    })
-    
-    opCs <- lapply(seq(length(a)), function(x) {
-      
-      est <- A$atoms$Extent[[x]]
-      units(est) <- "hours"
-      
-      a <- as.POSIXct(as.Date(floor_date(a[x], "day"), origin = "1970-01-01 00:00.00 UTC")) + as.difftime(7, units = "hours")
-      b <- as.POSIXct(as.Date(ceiling_date(b[x], "day"), origin = "1970-01-01 00:00.00 UTC")) + as.difftime(7, units = "hours")
-      
-      tasklength <- as.numeric(difftime(b, a))
-      
-      slope <- est/tasklength
-      
-      optC <- slope*rep(1, length(fp))
-      optC[periodsIndex[[x]] == FALSE] <- 0
-      optC
+      observeEvent(input[[paste0("slider_", paste(k, j, i, sep = "-"))]], priority = 2, {
+        
+        A$iH[[length(A$iH)]]$Start[atoms$ID == n][[1]] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[1] %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC")
+        A$iH[[length(A$iH)]]$End[atoms$ID == n][[1]] <- (input[[paste0("slider_", paste(k, j, i, sep = "-"))]])[2] %>% as.POSIXct(., origin = "1970-01-01 00:00.00 UTC")
+        
+        #' -------------------------------------------------| opCurve |-----------------------------------------------------
+        #' 
+        #' Create optimal curve data frame and store in Ascendance general environment (AGE).
+        {
+          
+          opMod <- BuildOpCurve(A$iH[[length(A$iH)]], dim_extent = "time", dim_metricS = "time", units_extent = "hours", metricJump = "days")
+          
+          dat <- opMod[,2:ncol(opMod)] %>% rowSums %>% data_frame(fp = opMod$fp, full = .)
+          
+          rv$dat <- dat
+          
+        }
+        #' --------------------------------------------------| Save |--------------------------------------------------------
+        #'
+        #' Save AGE to master filepath.
+        
+        save(A, file = Path)
+        
+      })
       
     })
     
-    names(opCs) <- as.character(unlist(A$atoms$ID))
-    
-    opCs <- data.frame(opCs)
-    
-    names(opCs) <- as.character(unlist(A$atoms$ID))
-    
-    opCs[] <- lapply(1:length(opCs), function(x) {
-      
-      as.numeric(opCs[,x])
-      
-    })
-    
-    temp <- opCs[,1:ncol(opCs)]
-    
-    opMod <- cbind(fp = fp, temp)
-    opCurve <- cbind(fp = fp, cumsum(temp))
-    
-    dat <- temp %>% rowSums %>% as.difftime(. , units = "hours") %>% data.frame(fp = fp, full = . )
-    datC <- temp %>% cumsum %>% rowSums %>% as.difftime(. , units = "hours") %>% data.frame(fp = fp, full = . )
-    
-    first <- (opCurve[2:ncol(opCurve)])[opCurve$fp == opCurve$fp[1],] %>% rowSums %>% unname %>% as.difftime(. , units = "hours")
-    
-    second <- (opCurve[2:ncol(opCurve)])[opCurve$fp > opCurve$fp[1],] %>% rowSums %>% unname %>% as.difftime(. , units = "hours")
-    
-    x <- c(opCurve$fp[1], opCurve$fp[1], opCurve$fp[opCurve$fp > opCurve$fp[1]], opCurve$fp[opCurve$fp == max(opCurve$fp)], opCurve$fp[1])
-    
-    y <- c(as.difftime(0, units = "hours"), first, second, as.difftime(0, units = "hours"), as.difftime(0, units = "hours"))
-    
-    shade <- data.frame(x, y)
-    
-    A$opCurve <- as_tibble(opCurve)
-    
-    tentr <- as.list(rep(Sys.time(), length(A$atoms$ID)))
-    names(tentr) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
-    tentr <- data.frame(tentr, stringsAsFactors = FALSE)
-    colnames(tentr) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
-    
-    tentr <- lapply(1:2, function(x) { tentr })
-    
-    names(tentr) <- c("start", "end")
-    
-    auto <- as.list(rep("", length(A$atoms$Name)))
-    names(auto) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
-    auto <- data.frame(auto, stringsAsFactors = FALSE)
-    colnames(auto) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
-    
-    eff <- as.list(rep(0, length(A$atoms$Name)))
-    names(eff) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
-    eff <- data.frame(eff, stringsAsFactors = FALSE)
-    colnames(eff) <- colnames(A$opCurve)[colnames(A$opCurve) %in% A$atoms$ID]
-    
-    dummy <- list()
-    
-    dummy$auto <- auto; dummy$start <- tentr$start; dummy$end <- tentr$end; dummy$eff <- eff
-    
-    A$tentr <- dummy
+  }
+  
+  
+  #' ==================================================================| PLOT OBSERVER |===================================================================
+  #'
+  #' Set up single observer to react to any one of the sliders and update its graph accordingly.
+  
+  {
     
     output$workDist <- renderPlot({
       
-      ggplot(data = dat, aes(x = fp, y = full)) + geom_bar(stat = "identity") + ggtitle("Workload per day") + 
+      ggplot(data = rv$dat, aes(x = fp, y = full)) + geom_bar(stat = "identity") + ggtitle("Workload per day") + 
         theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-        scale_x_datetime(breaks = A$opCurve$fp, labels = format(A$opCurve$fp,  "%a %d"), name = NULL) + 
+        scale_x_datetime(breaks = rv$dat$fp, labels = format(rv$dat$fp,  "%a %d"), name = NULL) + 
         scale_y_continuous(name = NULL)
       
     })
-    
-    save(A, file = Path)
-    
-  })
-
-  ############ ------------------------------------------------------------------------------------ ############
+  }
+  
   
 }
+

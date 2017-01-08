@@ -338,8 +338,6 @@ Input <-function(input, output, session, Path) {
       A$Logged <- cbind(A$Logged, data.frame(temp = rep(0, nrow(A$Logged))))
       colnames(A$Logged)[ncol(A$Logged)] <- i
       
-      
-       
     }
     
     ###### Experimental insertion of previous code to build opC and opCs
