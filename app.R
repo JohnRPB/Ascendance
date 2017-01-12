@@ -49,12 +49,12 @@ source(paste0(filepaths, "App/Setup/setup_focusAreas.R"))
 source(paste0(filepaths, "App/Setup/setup_categories.R"))
 source(paste0(filepaths, "App/Setup/setup_focusPeriod.R"))
 source(paste0(filepaths, "App/Setup/setup_taskSchedule.R"))
-source(paste0(filepaths, "App/AssessmentModule.R"))
-source(paste0(filepaths, "App/InputModule.R"))
+source(paste0(filepaths, "App/Setup/setup_trackers.R"))
+source(paste0(filepaths, "App/Setup/setup_hierarchy.R"))
 
 #  "A_Johann.R"
 
-path <- paste0(filepaths, "A_attempt20.R")
+path <- paste0(filepaths, "A_blackslate.R")
 
 options(shiny.reactlog=TRUE)
 
@@ -68,7 +68,7 @@ nameObject <- function(name, object, Envir = .GlobalEnv) {
 
 colfunc <- colorRampPalette(c("slategray1", "deepskyblue4"))
 
-if (file.exists(path) == FALSE) {
+if (file.exists(path) == TRUE) {
   
   load(path, envir = .GlobalEnv)
   
@@ -133,8 +133,8 @@ if (file.exists(path) == FALSE) {
   
 } else {
   
-  # A <<- new.env()
-  load(path, envir = .GlobalEnv)
+  A <<- new.env()
+  # load(path, envir = .GlobalEnv)
   
   header <- dashboardHeader(title = "Ascendance")
   
@@ -158,82 +158,138 @@ if (file.exists(path) == FALSE) {
   
   server <- function(input, output) {
     
-    tut <- reactiveValues()
-    tut$stage <- 4
+    #' ---------------------------------------| SETUP |-------------------------------------------
+    #' STORAGE
+    #'
+    #' Store some reactive inputs to be used later
     
-    observe(priority = 1, {
+    A$rv <- list(list(Names = c(), Location = c())) %>% rep( . , 2)
+    names(A$rv) <- c("0", "1")    
+    
+    #' Create reactive values object 'tut', with attribute 'stage' equal to zero
+    
+    tut <- reactiveValues(stage = 0)
+    
+    #' Make input for 'Next' button a reactive expression that will be used by observers inside modules for observers to fire when user
+    #' clicks 'Next'
+    
+    yes <- reactive({input$Next})
+    
+    #' Store the arguments to a future 'switch' call in list form, and save as reactive object
+    
+    tut$modules <- list("0", 
+                    "0" = {
+                      
+                      substitute(
+                        
+                        callModule(setup_trackers, x, yes),
+                        
+                        list(x = "0")
+                        
+                      )
+                      
+                    }
+    )
+    
+    #' Store the arguments to a future 'switch' call in list form, and save as reactive object
+    
+    tut$moduleUIs <- list("0", 
+                          "0" = {
+                            
+                           substitute(
+                              
+                              renderUI({
+                                
+                                setup_trackersInput(x)
+                                
+                              }),
+                              
+                              list(x = "0")
+                              
+                            )
+                            
+                          }
+    )
+    
+    #' ---------------------------------------| DYNAMIC MODULES LIST |-------------------------------------------
+    #'
+    #' Use i0 rows, created after user finishes first module, to generate future modules, and insert them in the 'switch' chain
+    
+    #' Observer fires after 'proceed()' observer in trackers module; gets new 'tut$stage' value, and 
+    
+    observeEvent(tut$stage, priority = 2, {
       
-      if (tut$stage == 0) {
+      stage <- tut$stage %>% as.character
+      
+      if (stage == "1") {
         
-        callModule(setup_intro, "intro")
+        modIDs <- A$rv[["0"]]$Names %>% length %>% seq_len %>% as.character
         
-        output$UI <- renderUI({
+        newModules <- lapply(modIDs, function(x) {
           
-          setup_introUI("intro")
-          
-        })
-        
-      } else if (tut$stage == 1) {
-        
-        callModule(setup_focusAreas, "focusAreas")
-        
-        output$UI <- renderUI({
-          
-          setup_focusAreasInput("focusAreas")
+          substitute(
+            
+            callModule(setup_hierarchy, x, yes, ID = x), 
+            
+            list(x = x, ID = x)
+            
+          )
           
         })
         
-      } else if (tut$stage == 2) {
+        newModules <- newModules %>% append(tut$modules, . )
         
-        save(A, file = path)
+        names(newModules) <- append(c("", "0"), modIDs)
         
-        callModule(setup_categories, "categories")
+        tut$modules <- newModules
         
-        output$UI <- renderUI({
+        newModuleUIs <- lapply(modIDs, function(x) {
           
-          setup_categoriesUI("categories")
-          
-        })
-        
-      } else if (tut$stage == 3) {
-        
-        save(A, file = path)
-        
-        yes <- reactive({input$Next})
-        
-        callModule(setup_focusPeriod, "focusperiod", yes)
-        
-        output$UI <- renderUI({
-          
-          setup_focusPeriodUI("focusperiod")
+          substitute(
+            
+            renderUI({
+              
+              setup_hierarchyInput(x)
+              
+            }), 
+            
+            list(x = x)
+            
+          )
           
         })
         
-      } else if (tut$stage == 4) {
+        newModuleUIs <- newModuleUIs %>% append(tut$moduleUIs, . )
         
-        save(A, file = path)
+        names(newModuleUIs) <- append(c("", "0"), modIDs)
         
-        yes <- reactive({input$Next})
+        tut$moduleUIs <- newModuleUIs
         
-        callModule(setup_taskSchedule, "taskSchedule", yes, Path = path)
-        
-        output$UI <- renderUI({
-          
-          setup_taskScheduleUI("taskSchedule")
-          
-        })
-        
-      } else if (tut$stage == 5) {
-        
-        save(A, file = path)
-        
-        stopApp()
         
       }
       
+      # "newModules utility:" %>% print
+      # tut$modules %>% print
+      
+      tut$modules[[1]] <- stage
+      tut$moduleUIs[[1]] <- stage
+      
     })
     
-    observeEvent(input$Next, priority = 2, {
+    observeEvent(tut$modules, priority = 1, {
+      
+      stage <- tut$stage %>% as.character
+      
+      "do.call utility:" %>% print
+      tut$modules %>% print
+      
+      do.call(switch, tut$modules) %>% eval
+      
+      output$UI <- do.call(switch, tut$moduleUIs) %>% eval
+      
+    })
+    
+    observeEvent(input$Next, priority = 4, {
       
       if (tut$stage < 5) {
         
@@ -243,7 +299,7 @@ if (file.exists(path) == FALSE) {
       
     })
     
-    observeEvent(input$Back, {
+    observeEvent(input$Back, priority = 4, {
       
       if (tut$stage >= 0) {
         

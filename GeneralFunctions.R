@@ -61,7 +61,7 @@ diffFrame <- function(dat1, operator = "-", dat2) {
 }
 
 VectorizeString <- function(x) {
-  
+    
   #' Break string at every comma, store as vector
   
   vec <- strsplit(x, ",") %>% unlist
@@ -525,66 +525,6 @@ BuildProcLog <- function(dat, starter = TRUE, ender = TRUE, start = NULL, end = 
 
 
 
-
-
-
-dat <- A$RawLog
-
-#' Build up dat into something like a real data log
-
-fake <- dat$Start
-
-dubious <- dat$End
-
-newRow <- matrix(ncol = ncol(fake), nrow = 1, rep(0, ncol(fake))) %>% as_tibble
-
-newRow[] <- lapply(1:ncol(newRow), function(x) { newRow[,x] <- as.list(newRow[,x]) })
-
-colnames(newRow) <- colnames(fake)
-
-fake <- rbind(fake, newRow)
-
-dubious <- rbind(dubious, newRow)
-
-fake[[1,1]] <- as.POSIXct("2017-01-02 16:45:00 PST"); dubious[[1,1]] <- as.POSIXct("2017-01-02 18:50:00 PST")
-fake[[2,2]] <- as.POSIXct("2017-01-03 12:00:00 PST"); dubious[[2,2]] <- as.POSIXct("2017-01-03 14:00:00 PST")
-fake[[3,4]] <- as.POSIXct("2017-01-03 15:30:00 PST"); dubious[[3,4]] <- as.POSIXct("2017-01-03 17:30:00 PST")
-fake[[4,4]] <- as.POSIXct("2017-01-04 08:00:00 PST"); dubious[[4,4]] <- as.POSIXct("2017-01-04 14:00:00 PST")
-fake[[5,1]] <- as.POSIXct("2017-01-05 06:00:00 PST"); dubious[[5,1]] <- as.POSIXct("2017-01-05 15:30:00 PST")
-fake[[6,3]] <- as.POSIXct("2017-01-08 05:35:00 PST"); dubious[[6,3]] <- as.POSIXct("2017-01-08 11:00:00 PST")
-fake[[7,5]] <- as.POSIXct("2017-01-08 18:45:00 PST"); dubious[[7,5]] <- as.POSIXct("2017-01-08 21:45:00 PST")
-fake[[8,6]] <- as.POSIXct("2017-01-09 17:10:00 PST"); dubious[[8,6]] <- as.POSIXct("2017-01-09 19:50:00 PST")
-fake[[9,7]] <- as.POSIXct("2017-01-10 11:20:00 PST"); dubious[[9,7]] <- as.POSIXct("2017-01-10 13:00:00 PST")
-fake[[10,7]] <- as.POSIXct("2017-01-11 13:30:00 PST"); dubious[[10,7]] <- as.POSIXct("2017-01-11 14:10:00 PST")
-
-
-fake[[1,1]]
-
-dat$Start <- fake
-
-dat$End <- dubious
-
-dat$LogTime <- fake
-
-
-dat
-
-fake %>% as.data.frame
-dubious %>% as.data.frame
-
-Sys.time()
-
-fake[[1,1]] <- 0
-
-fake[[1,1]]
-
-#' sd
-
-
-
-rbind(dat$Start, fake)
-
-fake[] <- lapply(1:ncol(fake), function(x) { fake[,x] <- as.list(fake[,x]) })
 
 
 
