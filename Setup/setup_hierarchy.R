@@ -418,6 +418,8 @@ setup_hierarchy <- function(input, output, session, proceed, ID) {
     
     A$rv %>% print
     
+    ###################### Monstrous code bulids prior n-hierarchy model as list
+    
     iterator <- A$rv %>% length %>% seq_len
     
     if (length(iterator) <= 2) {
@@ -441,6 +443,7 @@ setup_hierarchy <- function(input, output, session, proceed, ID) {
             Name = items %>% as.list, 
             Notes = items %>% length %>% rep("", . ) %>% as.list,
             Extent = items %>% length %>% rep("", . ) %>% as.list,
+            Weight = items %>% length %>% rep("", . ) %>% as.list, 
             Start = items %>% length %>% rep(Sys.time(), . ) %>% as.list,
             End = items %>% length %>% rep("", . ) %>% as.list
           ) %>% cbind( . , IDColumns) %>% as_tibble %>% as.data.frame
@@ -488,7 +491,29 @@ setup_hierarchy <- function(input, output, session, proceed, ID) {
         
       })
       
+      ############################# New code transforms prior n-hierarchy into current
+      
+      A$iH <- do.call(rbind, assemble(A$iH))
+      
+      ########## Time to insert "Uncategorized" levels
+      
+      IDColumns <- unique(A$iH[,-c(1:7)]) ## Finds all unique i-identity combinations
+      
+      A$iH <- tibble(
+        ID = IDColumns %>% nrow %>% seq_len %>% as.list , 
+        Name = IDColumns %>% nrow %>% rep("Uncategorized", .) %>% as.list, 
+        Notes = IDColumns %>% nrow %>% rep("", . ) %>% as.list,
+        Extent = IDColumns %>% nrow %>% rep("", . ) %>% as.list,
+        Weight = IDColumns %>% nrow %>% rep(1, . ) %>% as.list,
+        Start = IDColumns %>% nrow %>% rep(Sys.time(), . ) %>% as.list,
+        End = IDColumns %>% nrow %>% rep("", . ) %>% as.list
+      ) %>% cbind( . , IDColumns) %>% as_tibble %>% rbind(A$iH, .)
+      
+      A$iH$ID <- nrow(A$iH) %>% seq_len %>% as.list
+      
     }
+    
+
     
     
   })

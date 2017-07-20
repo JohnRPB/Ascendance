@@ -51,6 +51,7 @@ source(paste0(filepaths, "App/Setup/setup_focusPeriod.R"))
 source(paste0(filepaths, "App/Setup/setup_taskSchedule.R"))
 source(paste0(filepaths, "App/Setup/setup_trackers.R"))
 source(paste0(filepaths, "App/Setup/setup_hierarchy.R"))
+source(paste0(filepaths, "App/Setup/setup_goals.R"))
 
 #  "A_Johann.R"
 
@@ -265,6 +266,58 @@ if (file.exists(path) == TRUE) {
         
         tut$moduleUIs <- newModuleUIs
         
+      } else if (stage == "2") {
+        
+        ### Hacky way to add new modules to tut$modules and tut$moduleUIs
+        
+        #' First, take size of tut$modules 'as is' (minus the selector element and setup_trackers)
+        tut_len <- tut$modules %>% length %>% `-`(.,2)
+        #' Store as vector of prior module names
+        len_vec <- tut_len %>% seq_len %>% as.character
+        #' Create new module names by adding tut_len to vector '1,2,3...n' for n hierarchies.
+        new_vec <- A$rv[["0"]]$Names %>% length %>% seq_len %>% '+'(tut_len, .) %>% as.character
+        #' Also create vector of all module names for later use with names()
+        full_vec <- append(len_vec, new_vec)
+        
+        newModules <- lapply(new_vec, function(x) {
+          
+          substitute(
+            
+            callModule(setup_goals, x, yes, ID = y), 
+            
+            list(x = x, y = as.character(as.numeric(x)-tut_len)) #' y passes *tracker* ID into module via "ID" argument
+            
+          )
+          
+        })
+        
+        newModules <- newModules %>% append(tut$modules, . )
+        
+        names(newModules) <- append(c("", "0"), full_vec)
+        
+        tut$modules <- newModules
+        
+        newModuleUIs <- lapply(new_vec, function(x) {
+          
+          substitute(
+            
+            renderUI({
+              
+              setup_goalsInput(x)
+              
+            }), 
+            
+            list(x = x)
+            
+          )
+          
+        })
+        
+        newModuleUIs <- newModuleUIs %>% append(tut$moduleUIs, . )
+        
+        names(newModuleUIs) <- append(c("", "0"), full_vec)
+        
+        tut$moduleUIs <- newModuleUIs
         
       }
       
@@ -280,9 +333,12 @@ if (file.exists(path) == TRUE) {
       
       stage <- tut$stage %>% as.character
       
-      "do.call utility:" %>% print
+      "tut$modules:" %>% print
       tut$modules %>% print
-      
+      tut$modules %>% length %>% print
+      "tut$moduleUIs:" %>% print
+      tut$moduleUIs %>% print
+              
       do.call(switch, tut$modules) %>% eval
       
       output$UI <- do.call(switch, tut$moduleUIs) %>% eval

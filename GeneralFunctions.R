@@ -512,6 +512,34 @@ BuildProcLog <- function(dat, starter = TRUE, ender = TRUE, start = NULL, end = 
   
 }
 
+##### Assemble
+
+assemble <- function(framelist) {
+  
+  # Looks to see how many columns first data frame has, stores, then last data frame
+  NumberOfBasicCols <- ncol(framelist[[1]])
+  NumberOfColsTot <- ncol(framelist[[length(framelist)]])
+  
+  AncillaryCols <- framelist[[length(framelist)]][,(NumberOfBasicCols+1):NumberOfColsTot]
+  
+  AncillaryCols[] <- lapply(1:ncol(AncillaryCols), function(x) {
+    
+    0
+    
+  })
+  
+  for(i in 1:(length(framelist)-1)) {
+    
+    NewAncillaryCols <- AncillaryCols[1:nrow(framelist[[i]]),]
+    AncillaryColsToReplace <- NewAncillaryCols[,i:ncol(NewAncillaryCols), drop = FALSE]
+    
+    framelist[[i]] <- cbind(framelist[[i]], AncillaryColsToReplace)
+    
+  }
+  
+  framelist
+}
+
 
 
 
