@@ -1,7 +1,16 @@
 # Ascendance
-Personal information organizer and time manager, currently built with Shiny Dashboard.
+Personal information organizer and time manager, built with Shiny Dashboard.
 
-This project is not in active development; it was a prototype I built over a year ago. Below are some pictures of the app:
+This project is not in active development; it was a prototype I built over a year ago. Below are some examples of the prototype functioning:
+
+The main setup page,
 
 ![main](images/main.png)
 
+Inputing TODOs,
+
+![focus](images/focus.png)
+
+Current TODOs,
+
+![tasks](images/tasks.png)
