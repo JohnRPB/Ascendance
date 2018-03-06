@@ -7,7 +7,7 @@ The main setup page,
 
 ![main](images/main.png)
 
-Inputing TODOs,
+Prioritizing TODOs by category,
 
 ![focus](images/focus.png)
 
